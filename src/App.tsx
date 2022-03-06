@@ -1,55 +1,87 @@
 import React, {useEffect, useState} from 'react';
 import {Image} from "./image";
 import {ImageServices} from "./image-services";
-import Pagination from "@mui/material/Pagination";
+import {PaginationImage} from "./pagination";
+import {ImageListItem} from "./imageListItem";
+import {ImageModal} from "./imageModal";
+import Grid from "@mui/material/Grid";
+import './App.css';
 
 function App() {
 
     let [arrImage, setArrImage] = useState<Image[]>([]);
+    let [page, setPage] = useState<number>(1);
+    let [arrPagination, setArrPagination] = useState<Image[]>(arrImage?.slice(1, 10));
+    let [modalItem, setModalItem] = useState<Image | null>(null);
 
     const setImage = async () => {
         let a = await ImageServices.GetImage();
-        setArrImage(a)
+        setArrImage(a);
+        let pagArr = a.slice(0, 10);
+        setArrPagination([...pagArr])
     };
+
 
     useEffect(() => {
-        setImage()
+        setImage();
     }, []);
 
-    const deleteImage = (i: Image, arr: Image[], key:number) => {
-        let el = arr.find((x) => x.id === i.id);
-        let index = el ? arr.indexOf(el) : -1;
-        arr.splice(index, 1);
-        let div = document.getElementById("div"+key);
-        div?.remove()
+
+    const deleteImage = (i: Image) => {
+        let el = arrPagination.find((x) => x.id === i.id);
+        let index = el ? arrPagination.indexOf(el) : -1;
+        let elArrImage = arrImage.find((x) => x.id === i.id);
+        let indexArrImage = elArrImage ? arrImage.indexOf(elArrImage) : -1;
+        arrPagination.splice(index, 1);
+        arrImage.splice(indexArrImage, 1);
+        setArrPagination([...arrPagination]);
+        setArrImage([...arrImage])
     };
 
-    const paginate =(event: any)=> {
-        let a = arrImage.slice((event.target.value - 1) * 10, event.target.value * 10);
-        setArrImage(a)
+    const pageChange = (value: number) => {
+        let newArr = arrImage?.slice((value - 1) * 10, value * 10);
+        setPage(value);
+        setArrPagination(newArr)
     };
 
+    function compareNumbersAscending(a: Image, b: Image) {
+        return a.albumId - b.albumId;
+    }
+
+    function compareNumbersDescending(a: Image, b: Image) {
+        return b.albumId - a.albumId;
+    }
+
+    const sortDescending = () => {
+        arrImage.sort(compareNumbersDescending);
+        setArrImage([...arrImage]);
+        let pagArr = arrImage.slice((page - 1) * 10, page * 10);
+        setArrPagination([...pagArr])
+    };
+
+    const sortAscending = () => {
+        arrImage.sort(compareNumbersAscending);
+        setArrImage([...arrImage]);
+        let pagArr = arrImage.slice((page - 1) * 10, page * 10);
+        setArrPagination([...pagArr])
+    };
 
     return (
-        <div>
-            <Pagination count={arrImage.length/10} onChange={paginate}/>
-            {arrImage ? arrImage.map((i: Image, key: number) => {
-                return (
-                    <div key={key} id={"div"+key}>
-                        <div>{i.title}</div>
-                        <img id={i.id.toString()} src={i.thumbnailUrl} alt={i.title} onClick={() => {
-                            let a: HTMLImageElement = document.getElementById(i.id.toString()) as HTMLImageElement;
-                            if (a.src == i.thumbnailUrl) {
-                                a.src = i.url
-                            } else {
-                                a.src = i.thumbnailUrl
-                            }
-                        }}/>
-                        <button onClick={() => deleteImage(i, arrImage, key)}>Удалить</button>
-                    </div>
-                )
-            }) : ''}
-        </div>
+        <>
+            <div className={"center"}>
+                <PaginationImage pageCount={Math.ceil(arrImage.length / 10)} pageChange={pageChange} page={page}
+                                 sortAscending={sortAscending} sortDescending={sortDescending}/>
+                <Grid container spacing={5}>
+                    {arrPagination ? arrPagination.map((i: Image, key: number) => {
+                    return (
+                        <ImageListItem image={i} onClick={setModalItem}
+                                       deleteImage={deleteImage} key={key}/>
+                    )
+                }) : ''}
+                </Grid>
+            </div>
+            <ImageModal onClose={() => setModalItem(null)} image={modalItem}/>
+        </>
     );
 }
 

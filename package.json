@@ -5,6 +5,7 @@
   "dependencies": {
     "@emotion/react": "^11.8.1",
     "@emotion/styled": "^11.8.1",
+    "@material/image-list": "^13.0.0",
     "@mui/material": "^5.4.3",
     "@types/node": "^16.11.26",
     "@types/react": "^17.0.39",
